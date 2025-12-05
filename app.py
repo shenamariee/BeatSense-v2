@@ -76,6 +76,14 @@ def save_uploaded_files(uploaded_files, dest_dir=WORK_DIR):
         saved.append(path)
     return saved
 
+# **Added missing function here:**
+def get_base_names(directory):
+    basenames = set()
+    for fname in os.listdir(directory):
+        base, _ = os.path.splitext(fname)
+        basenames.add(base)
+    return sorted(list(basenames))
+
 # ... keep all your other utility functions here unchanged ...
 
 # ------------------------ Session state defaults ------------------------
