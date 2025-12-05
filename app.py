@@ -26,6 +26,42 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from datetime import datetime
 
+
+st.markdown(
+    """
+    <style>
+    /* Sidebar background color */
+    [data-testid="stSidebar"] {
+        background-color: #0078d7;  /* nice blue */
+        color: white;
+    }
+
+    /* Sidebar header/title text */
+    [data-testid="stSidebar"] .css-1d391kg {
+        color: white;
+        font-weight: bold;
+    }
+
+    /* Sidebar links (radio buttons) */
+    [data-testid="stSidebar"] .css-1hynsf2 {
+        color: white;
+    }
+
+    /* Buttons hover color */
+    div.stButton > button:hover {
+        background-color: #005a9e;
+        color: white;
+    }
+
+    /* General header h1 in main page */
+    h1 {
+        color: #0078d7;
+    }
+    </style>
+    """, unsafe_allow_html=True
+)
+
+
 # ------------------------ App config ------------------------
 st.set_page_config(page_title="BeatSense", layout="wide", initial_sidebar_state="expanded")
 # Placeholder logo filename: when you have your logo, add it to the repo root as this filename
@@ -175,10 +211,11 @@ if logo_file:
     st.success("Logo uploaded and will appear in the header/sidebar.")
 
 # ------------------------ Helper: navigate function ------------------------
-def go_to(page_name: str):
-    st.session_state['page'] = page_name
-    # immediate rerun so the UI jumps to the next page
-    st.rerun()
+if not st.session_state['accepted_terms']:
+    if st.button("I Accept (Proceed)"):
+        st.session_state['accepted_terms'] = True
+        st.session_state['page'] = 'Patient Info'  # or whatever the next page is
+        st.rerun()
 
 # ------------------------ Page implementations (with "Proceed" buttons) ------------------------
 def show_home():
