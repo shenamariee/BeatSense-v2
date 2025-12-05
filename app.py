@@ -93,7 +93,7 @@ if 'logo_path' not in st.session_state:
 # ------------------------ Navigation helper ------------------------
 def go_to(page_name):
     st.session_state['page'] = page_name
-    st.experimental_rerun()  # rerun app to apply page change
+    st.rerun()  # rerun app to apply page change
 
 # ------------------------ UI: Sidebar navigation ------------------------
 st.sidebar.title("Navigation")
@@ -101,7 +101,7 @@ pages = ["Home", "Working Principle", "Terms & Conditions", "Patient Info", "ECG
 choice = st.sidebar.radio("(Quick jump) Go to", pages, index=pages.index(st.session_state['page']))
 if choice != st.session_state['page']:
     st.session_state['page'] = choice
-    st.experimental_rerun()
+    st.rerun()
 
 if st.session_state['logo_path'] and os.path.exists(st.session_state['logo_path']):
     st.sidebar.image(st.session_state['logo_path'], use_column_width=True)
