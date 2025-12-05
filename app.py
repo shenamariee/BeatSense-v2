@@ -178,7 +178,7 @@ if logo_file:
 def go_to(page_name: str):
     st.session_state['page'] = page_name
     # immediate rerun so the UI jumps to the next page
-    st.experimental_rerun()
+    st.rerun()
 
 # ------------------------ Page implementations (with "Proceed" buttons) ------------------------
 def show_home():
