@@ -57,11 +57,11 @@ st.markdown(
 
 # ------------------------ App config ------------------------
 st.set_page_config(page_title="BeatSense", layout="wide", initial_sidebar_state="expanded")
-LOGO_FILENAME = "beatsense_logo.png"
+LOGO_FILENAME = "BeatSense logo.jpg"   # exact filename you said is in the repo
 WORK_DIR = "ecg_data"
 os.makedirs(WORK_DIR, exist_ok=True)
 
-# ------------------------ Utility functions ------------------------
+# ------------------------ Utility functions (original logic) ------------------------
 def save_uploaded_files(uploaded_files, dest_dir=WORK_DIR):
     saved = []
     for file in uploaded_files:
@@ -177,29 +177,32 @@ if 'patient_info' not in st.session_state:
 if 'last_analysis' not in st.session_state:
     st.session_state['last_analysis'] = None
 if 'logo_path' not in st.session_state:
+    # prefer repo file LOGO_FILENAME if present
     st.session_state['logo_path'] = LOGO_FILENAME if os.path.exists(LOGO_FILENAME) else None
 
 # ------------------------ Navigation helper ------------------------
 def go_to(page_name):
     st.session_state['page'] = page_name
+    # rerun to immediately show the requested page
     try:
-        st.experimental_rerun()
+        st.rerun()
     except Exception:
         pass
 
-# ------------------------ Sidebar ------------------------
+# ------------------------ Sidebar (logo + current step + ECG uploader when on upload page) ------------------------
 with st.sidebar:
-    # Logo
-    if st.session_state['logo_path'] and os.path.exists(st.session_state['logo_path']):
+    # Logo (static, no upload widget)
+    if st.session_state.get('logo_path') and os.path.exists(st.session_state.get('logo_path')):
         st.image(st.session_state['logo_path'], use_column_width=True)
     else:
         st.markdown("**BeatSense**")
 
-    # Current step display (not navigation)
-    st.markdown(f"### Current Step:")
+    st.markdown("---")
+    st.markdown("### Current Step")
     st.markdown(f"**{st.session_state['page']}**")
+    st.markdown("---")
 
-    # ECG file uploader ONLY on ECG Upload page (for UX)
+    # Show ECG uploader only when user is on the ECG Upload & Analysis page
     if st.session_state['page'] == "ECG Upload & Analysis":
         uploaded_files = st.file_uploader("Upload ECG files (.hea, .dat, .atr)", type=["hea","dat","atr"], accept_multiple_files=True)
         if uploaded_files:
@@ -209,9 +212,10 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("BeatSense — academic demo. Not for clinical use.")
 
-# ------------------------ Pages ------------------------
+# ------------------------ Page implementations ------------------------
+
 def show_home():
-    st.header("BeatSense")
+    st.title("BeatSense")
     col1, col2 = st.columns([1,3])
     with col1:
         if st.session_state.get('logo_path') and os.path.exists(st.session_state.get('logo_path')):
@@ -221,7 +225,7 @@ def show_home():
     with col2:
         st.markdown("### Welcome to BeatSense")
         st.write("BeatSense is an academic tool that analyses ECG recordings to detect rhythm abnormalities using signal processing and machine learning.")
-        st.write("Follow the step-by-step flow: read the working principle, accept terms, enter patient info, upload ECG files, and view results.")
+        st.write("Follow the linear step flow using the 'Proceed' buttons. The sidebar shows the current step and allows uploading ECG files when you reach the ECG page.")
     st.markdown("---")
     if st.button("Proceed to Working Principle"):
         go_to("Working Principle")
@@ -265,7 +269,7 @@ def show_terms():
     with col2:
         if st.button("Decline"):
             st.session_state['accepted_terms'] = False
-            st.warning("You declined the terms. Analysis will require acceptance.")
+            st.warning("You declined the terms. You can still navigate but analysis requires acceptance.")
 
 def show_patient_info():
     st.header("Patient Information")
@@ -277,7 +281,6 @@ def show_patient_info():
         if submitted:
             st.session_state['patient_info'] = {'name':name, 'age':age, 'gender':gender}
             st.success("Patient info saved.")
-
     st.markdown("---")
     cols = st.columns(3)
     if cols[1].button("Proceed to ECG Upload & Analysis"):
@@ -292,9 +295,10 @@ def show_ecg_analysis():
         st.error("You must accept the Terms & Conditions before performing analysis.")
         return
 
+    # Files are uploaded via the sidebar uploader. Here we list available basenames.
     available_bases = get_base_names(WORK_DIR)
     if not available_bases:
-        st.info("No files available — upload .hea/.dat/.atr files in the sidebar.")
+        st.info("No files available — upload .hea/.dat/.atr files in the sidebar (left).")
         return
 
     chosen_base = st.selectbox("Select record (basename)", available_bases)
@@ -365,6 +369,7 @@ def show_ecg_analysis():
             st.write("Confusion matrix (beat-level):")
             st.dataframe(pd.DataFrame(confusion_matrix(y_test, pred_beats), index=np.unique(y_test), columns=np.unique(y_test)))
 
+        # Sequence analysis
         beat_hr_labels = []
         for rr_val in rr[:len(beat_features)]:
             hr = 60 / rr_val if rr_val > 0 else 0
@@ -399,6 +404,7 @@ def show_ecg_analysis():
                 seq_labels.append(1)
                 tachy_results.append("Tachycardia")
 
+        # Build sequence features (kept)
         seq_features = []
         seq_target = []
         seq_index_map = []
@@ -416,88 +422,221 @@ def show_ecg_analysis():
             avg_hr = 60 / mean_rr if mean_rr > 0 else 0.0
             pause_flag = 1 if np.any(seq_rr > 3.0) else 0
             irregular_flag = 1 if is_irregular(seq_rr) else 0
-            seq_features.append([mean_rr, median_rr, std_rr, rmssd, pnn50, avg_hr, pause_flag, irregular_flag])
-            seq_target.append(tachy_label_map.get(tachy_results[idx], -1))
-            seq_index_map.append(start)
+            total_ann = len(seq_beats) if len(seq_beats) > 0 else 1
+            count_V = np.sum([1 for b in seq_beats if b == "V"])
+            count_A = np.sum([1 for b in seq_beats if b == "A"])
+            count_F = np.sum([1 for b in seq_beats if b == "F"])
+            count_LR = np.sum([1 for b in seq_beats if b in ["L", "R"]])
+            count_N = np.sum([1 for b in seq_beats if b == "N"])
+            percent_V = count_V / total_ann
+            percent_A = count_A / total_ann
+            percent_F = count_F / total_ann
+            percent_LR = count_LR / total_ann
+            percent_N = count_N / total_ann
+            features = [
+                mean_rr, median_rr, std_rr, rmssd, pnn50, avg_hr,
+                pause_flag, irregular_flag,
+                percent_V, percent_A, percent_F, percent_LR, percent_N
+            ]
+            seq_features.append(features)
+            rule_label = tachy_results[idx]
+            mapped = tachy_label_map.get(rule_label, 4)
+            seq_target.append(mapped)
+            seq_index_map.append(idx)
+        seq_features = np.array(seq_features)
+        seq_target = np.array(seq_target)
+        seq_index_map = np.array(seq_index_map)
 
-        if len(seq_features) > 5 and len(set(seq_target)) > 1:
-            X_seq = np.array(seq_features)
-            y_seq = np.array(seq_target)
-            clf_seq = train_rf_model(X_seq, y_seq, n_estimators=100)
-            pred_seq = clf_seq.predict(X_seq)
-            st.subheader("Sequence-level classification (tachyarrhythmia subtypes)")
-            st.text(classification_report(y_seq, pred_seq, zero_division=0))
-            st.write("Confusion matrix (sequence-level):")
-            st.dataframe(pd.DataFrame(confusion_matrix(y_seq, pred_seq), index=np.unique(y_seq), columns=np.unique(y_seq)))
+        train_mask = seq_target != -1
+        X_tachy = seq_features[train_mask] if len(seq_features)>0 else np.array([])
+        y_tachy = seq_target[train_mask] if len(seq_target)>0 else np.array([])
+
+        use_ml2 = False
+        clf_tachy = None
+        if len(y_tachy) >= 5 and len(np.unique(y_tachy)) > 1:
+            X_tr, X_val, y_tr, y_val = train_test_split(X_tachy, y_tachy, test_size=0.2, random_state=42, stratify=y_tachy if len(np.unique(y_tachy))>1 else None)
+            clf_tachy = train_rf_model(X_tr, y_tr)
+            use_ml2 = True
+            y_pred_val = clf_tachy.predict(X_val)
+            st.subheader("Tachycardia subtype classifier (RF #2) validation")
+            st.text(classification_report(y_val, y_pred_val, zero_division=0))
+            st.write("Confusion matrix (RF #2 validation):")
+            st.dataframe(pd.DataFrame(confusion_matrix(y_val, y_pred_val)))
         else:
-            st.info("Not enough sequences to train tachyarrhythmia subtype classifier.")
+            st.info("Not enough tachy sequences to train RF #2. Using rule-based subtypes.")
 
+        if use_ml2:
+            inv_tachy_map = {v:k for k,v in tachy_label_map.items() if v != -1}
+            for row_idx, seq_idx in enumerate(seq_index_map):
+                if seq_target[row_idx] != -1:
+                    pred_int = clf_tachy.predict([seq_features[row_idx]])[0]
+                    pred_str = inv_tachy_map.get(pred_int, "Other Tachy")
+                    if seq_labels[seq_idx] == 2:
+                        tachy_results[seq_idx] = pred_str
+
+        overall_summary = {"Bradycardia":0, "Normal":0, "Tachycardia":0, "AFib":0, "VT":0, "SVT":0, "AFlutter":0, "Other Tachy":0}
+        for i, label in enumerate(seq_labels):
+            if label == 0:
+                overall_summary["Bradycardia"] += 1
+            elif label == 1:
+                overall_summary["Normal"] += 1
+            else:
+                overall_summary["Tachycardia"] += 1
+                subtype = tachy_results[i]
+                if subtype == "Atrial Fibrillation":
+                    overall_summary["AFib"] += 1
+                elif subtype == "Ventricular Tachycardia":
+                    overall_summary["VT"] += 1
+                elif subtype == "Supraventricular Tachycardia":
+                    overall_summary["SVT"] += 1
+                elif subtype == "Atrial Flutter":
+                    overall_summary["AFlutter"] += 1
+                else:
+                    overall_summary["Other Tachy"] += 1
+
+        # Save results in session state for the Results page
         st.session_state['last_analysis'] = {
-            'record': record_path,
+            'chosen_base': chosen_base,
+            'overall_summary': overall_summary,
             'signal': signal,
             'fs': fs,
             'r_peaks': r_peaks,
-            'labels': labels,
             'beat_features': beat_features,
-            'beat_labels': y_beats,
             'seq_features': seq_features,
-            'seq_target': seq_target,
+            'sequence_labels': seq_labels,
+            'tachy_results': tachy_results,
+            'beat_df': pd.DataFrame(beat_features, columns=["mean","std","min","max","rr","median","p25","p75","energy","length"]) if len(beat_features)>0 else None,
+            'sequence_df': pd.DataFrame(seq_features, columns=["mean_rr","median_rr","std_rr","rmssd","pnn50","avg_hr","pause_flag","irregular_flag","percent_V","percent_A","percent_F","percent_LR","percent_N"]) if len(seq_features)>0 else None
         }
 
-    if st.button("Proceed to Results Summary"):
-        go_to("Results Summary")
+        # Display summary & plots
+        st.subheader("Overall rhythm summary (sequence-level windows)")
+        total_sequences = sum(overall_summary.values()) if sum(overall_summary.values())>0 else 1
+        summary_table = pd.DataFrame([{"Rhythm Type": k, "Sequences": v, "Percent": (v/total_sequences)*100 if total_sequences>0 else 0.0} for k,v in overall_summary.items() if v>0])
+        st.dataframe(summary_table)
 
-def show_results_summary():
+        fig, ax = plt.subplots(figsize=(12,3))
+        ax.plot(signal, label='ECG Signal')
+        ax.scatter(r_peaks, signal[r_peaks], color='red', s=10, label='R-peaks')
+        ax.set_title(f"ECG Signal (first {len(signal)} samples)")
+        ax.set_xlabel("Sample")
+        ax.set_ylabel("Amplitude")
+        ax.legend()
+        st.subheader("ECG plot with detected/annotated R-peaks")
+        st.pyplot(fig)
+
+        st.subheader("First 20 beats (ML beat label if available, HR, Sequence-level rhythm)")
+        beat_rows = []
+        for i in range(min(20, len(beat_features))):
+            ml_label = "N/A"
+            if 'clf_beats' in locals() and clf_beats is not None:
+                try:
+                    ml_pred = clf_beats.predict([beat_features[i]])[0]
+                    ml_label = [k for k,v in label_map.items() if v==ml_pred][0]
+                except Exception:
+                    ml_label = "N/A"
+            hr = 60 / rr[i] if rr[i] > 0 else 0
+            seq_idx = min(i, max(0, len(seq_labels)-1))
+            if hr < 60:
+                beat_rhythm_label = "Bradycardia"
+            elif hr > 100:
+                beat_rhythm_label = tachy_results[seq_idx] if seq_idx < len(tachy_results) else "Tachycardia"
+            else:
+                beat_rhythm_label = "Normal"
+            beat_rows.append({"Beat": i, "ML_Label": ml_label, "HR_bpm": round(hr,1), "Rhythm": beat_rhythm_label})
+        st.table(pd.DataFrame(beat_rows))
+
+        beat_df = st.session_state['last_analysis']['beat_df']
+        if beat_df is not None:
+            beat_df["annotation_symbol"] = labels[:len(beat_df)]
+            beat_df["hr_bpm"] = [60/x if x>0 else 0 for x in beat_df["rr"]]
+        sequence_df = st.session_state['last_analysis']['sequence_df']
+        if sequence_df is not None:
+            if len(seq_labels) >= len(sequence_df):
+                sequence_df["rule_seq_label"] = seq_labels[:len(sequence_df)]
+                sequence_df["rule_tachy_result"] = tachy_results[:len(sequence_df)]
+            else:
+                # pad if necessary
+                sequence_df["rule_seq_label"] = seq_labels + [None]*(len(sequence_df)-len(seq_labels))
+                sequence_df["rule_tachy_result"] = tachy_results + [None]*(len(sequence_df)-len(tachy_results))
+
+        if beat_df is not None:
+            st.download_button(label="Download beat-level features (CSV)", data=beat_df.to_csv(index=False).encode('utf-8'), file_name=f"beats_{chosen_base}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
+        if sequence_df is not None:
+            st.download_button(label="Download sequence-level summary (CSV)", data=sequence_df.to_csv(index=False).encode('utf-8'), file_name=f"sequences_{chosen_base}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
+
+        st.success("Analysis complete.")
+        if st.button("Proceed to Results"):
+            go_to("Results")
+
+def show_results():
     st.header("Results Summary")
-    if st.session_state['last_analysis'] is None:
-        st.warning("No analysis data found. Please run ECG analysis first.")
+    if not st.session_state.get('last_analysis'):
+        st.info("No analysis run yet — go to ECG Upload & Analysis and run the analysis.")
         return
-    analysis = st.session_state['last_analysis']
+    res = st.session_state['last_analysis']
+    overall_summary = res['overall_summary']
 
-    st.markdown("### Patient Info")
-    pi = st.session_state.get('patient_info', {})
-    st.write(pi)
+    # Clean result statement
+    total = sum(overall_summary.values()) if sum(overall_summary.values())>0 else 1
+    if overall_summary.get('Tachycardia',0) == 0 and overall_summary.get('Bradycardia',0) == 0:
+        st.success("Result: Normal rhythm detected. Based on the uploaded recording, the heart rhythm appears healthy. This is for academic/demonstration purposes only.")
+    else:
+        if overall_summary.get('Bradycardia',0) > 0:
+            st.warning("Result: Some windows show bradycardia (slow heart rate). If symptomatic, seek professional medical advice.")
+        if overall_summary.get('Tachycardia',0) > 0:
+            st.warning("Result: Some windows show tachycardia (fast heart rate). If symptomatic or persistent, please consult a healthcare professional.")
 
-    st.markdown("### Analysis Record")
-    st.write(analysis['record'])
+    st.subheader("Detailed summary")
+    st.dataframe(pd.DataFrame([{"Rhythm Type": k, "Sequences": v} for k,v in overall_summary.items() if v>0]))
 
-    st.markdown("### Beats & Annotations")
-    st.write(f"Number of beats detected: {len(analysis['r_peaks'])}")
-    st.write(f"Sample rate: {analysis['fs']} Hz")
-
-    st.markdown("### Visualize Signal and Beats")
-    fig, ax = plt.subplots(figsize=(10, 4))
-    sig = analysis['signal']
-    fs = analysis['fs']
-    t = np.arange(len(sig)) / fs
-    ax.plot(t, sig, label="ECG Signal")
-    ax.plot(analysis['r_peaks'] / fs, sig[analysis['r_peaks']], 'ro', label="R-peaks")
-    ax.set_xlabel("Time (seconds)")
-    ax.set_ylabel("Amplitude (mV)")
-    ax.legend()
+    # quick chart
+    fig, ax = plt.subplots(figsize=(8,3))
+    labels = [k for k,v in overall_summary.items() if v>0]
+    vals = [v for k,v in overall_summary.items() if v>0]
+    ax.bar(labels, vals)
+    ax.set_title("Sequence-level rhythm distribution")
     st.pyplot(fig)
 
-    if st.button("Finish and Thank You"):
+    st.markdown("---")
+    st.write("Patient info:")
+    st.write(st.session_state['patient_info'])
+
+    # download existing CSVs if present
+    if res.get('beat_df') is not None:
+        st.download_button(label="Download beat-level CSV", data=res['beat_df'].to_csv(index=False).encode('utf-8'),
+                           file_name=f"beats_{res['chosen_base']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
+    if res.get('sequence_df') is not None:
+        st.download_button(label="Download sequence-level CSV", data=res['sequence_df'].to_csv(index=False).encode('utf-8'),
+                           file_name=f"sequences_{res['chosen_base']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
+
+    st.markdown("---")
+    cols = st.columns(3)
+    if cols[1].button("Proceed to Thank You"):
         go_to("Thank You")
 
-def show_thank_you():
-    st.header("Thank You!")
-    st.write("Thank you for using BeatSense academic ECG analysis demo.")
-    st.write("For questions or feedback, contact the development team.")
-    if st.button("Restart"):
-        st.session_state.clear()
-        st.rerun()
+def show_thankyou():
+    st.header("Thank you for using BeatSense")
+    st.write("We appreciate you trying this academic demonstration. If you found this useful, please star the repo on GitHub and cite appropriately.")
+    st.write("Remember: BeatSense is an academic tool — not for clinical use.")
+    if st.button("Restart the app (clear state)"):
+        # clear only the keys we set (safe restart)
+        keys = list(st.session_state.keys())
+        for k in keys:
+            del st.session_state[k]
+        # ensure defaults are back
+        st.experimental_rerun()
 
 # ------------------------ Page router ------------------------
-page_funcs = {
+pages_map = {
     "Home": show_home,
     "Working Principle": show_working_principle,
     "Terms & Conditions": show_terms,
     "Patient Info": show_patient_info,
     "ECG Upload & Analysis": show_ecg_analysis,
-    "Results Summary": show_results_summary,
-    "Thank You": show_thank_you
+    "Results": show_results,
+    "Thank You": show_thankyou
 }
 
-page_func = page_funcs.get(st.session_state['page'], show_home)
+page_func = pages_map.get(st.session_state.get('page','Home'), show_home)
 page_func()
