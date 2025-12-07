@@ -1,4 +1,4 @@
-t# app.py
+# app.py
 """
 BeatSense app — full analysis + wizard UI with linear step flow and sidebar logo + upload only
 Run:
