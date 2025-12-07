@@ -1,4 +1,4 @@
-# app.py
+t# app.py
 """
 BeatSense app — full analysis + wizard UI with linear step flow and sidebar logo + upload only
 Run:
@@ -572,10 +572,12 @@ def show_ecg_analysis():
 
 # --- CLEAN RESULTS PAGE (REPLACE YOUR OLD RESULTS SECTION) ---
 
-st.header("Your Results Are Here:")
+st.header("Result Summary")
+
+st.write("Your Result Are Here:")
 
 # Show the overall summary generated in your analysis section
-st.write(f"**ECG Summary:** {overall_summary}")
+st.write(f"**ECG Summary:** {summary_table}")
 
 # Conditional explanation messages
 if overall_summary.lower() == "normal":
