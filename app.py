@@ -655,6 +655,27 @@ def show_ecg_analysis():
             "sequence_df": sequence_df if 'sequence_df' in locals() else None
         }
 
+            # After your analysis
+        if 'last_result' not in st.session_state:
+            st.session_state['last_result'] = {}
+        
+        # Determine overall summary
+        brady_count = overall_summary.get("Bradycardia", 0)
+        normal_count = overall_summary.get("Normal", 0)
+        tachy_count = overall_summary.get("Tachycardia", 0)
+        
+        if brady_count > max(normal_count, tachy_count):
+            summary_text = "Bradycardia"
+        elif tachy_count > max(normal_count, brady_count):
+            summary_text = "Tachycardia"
+        else:
+            summary_text = "Normal"
+        
+        st.session_state['last_result']['summary'] = summary_text
+        st.session_state['last_result']['beat_df'] = beat_df
+        st.session_state['last_result']['sequence_df'] = sequence_df
+        st.session_state['last_result']['chosen_base'] = chosen_base
+
     
     # offer proceed once analysis output exists
     if st.session_state.get('last_analysis') is not None:
