@@ -64,6 +64,88 @@ WORK_DIR = "ecg_data"
 os.makedirs(WORK_DIR, exist_ok=True)
 
 # ------------------------ Utility functions (from your original) ------------------------
+def show_home():
+    st.header("BeatSense")
+    col1, col2 = st.columns([1,3])
+    with col1:
+        if st.session_state.get('logo_path'):
+            st.image(st.session_state.get('logo_path'), width=150)
+        else:
+            st.markdown("### ❤️")
+    with col2:
+        st.markdown("### Welcome to BeatSense")
+        st.write("BeatSense is an academic tool that analyses ECG recordings to detect rhythm abnormalities using signal processing and machine learning.")
+        st.write("Follow the guided flow using the Proceed buttons. The sidebar shows the current step.")
+
+    st.markdown("---")
+    if st.button("Proceed to Working Principle"):
+        go_to("Working Principle")
+
+def show_working_principle():
+    st.header("Working Principle of BeatSense")
+    st.markdown(
+        """
+        **Overview**
+
+        1. The app reads ECG signals in WFDB format (.hea/.dat and optional .atr annotations).
+        2. Signals are bandpass-filtered and R-peaks are detected (Pan-Tompkins if no annotations).
+        3. Individual beats are extracted and resampled to a fixed length; beat-level features are computed.
+        4. A Random Forest classifier performs beat-level classification when sufficient labels are present.
+        5. Sequences of beats are summarized (RR statistics, RMSSD, pNN50, etc.) and rule-based logic classifies rhythm windows.
+        6. If enough labeled tachy sequences exist, a second RF model is trained to subtype tachyarrhythmias.
+
+        The app is intended for academic and demonstration purposes and NOT a substitute for clinical diagnosis.
+        """
+    )
+    st.markdown("---")
+    if st.button("Proceed to Terms & Conditions"):
+        go_to("Terms & Conditions")
+
+def show_terms():
+    st.header("Terms & Conditions")
+    st.warning("**BeatSense is for academic purposes only. This tool does NOT provide medical diagnosis. Always consult a qualified healthcare professional for clinical decisions.**")
+    st.markdown("By using this tool you agree that you understand its academic/demo nature and that no real clinical decisions should be made from the outputs.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if not st.session_state['accepted_terms']:
+            if st.button("I Accept and Proceed"):
+                st.session_state['accepted_terms'] = True
+                st.success("Terms accepted — moving to Patient Info.")
+                go_to("Patient Info")
+        else:
+            st.info("Terms already accepted — you may continue.")
+            if st.button("Proceed to Patient Info"):
+                go_to("Patient Info")
+    with col2:
+        if st.button("Decline"):
+            st.session_state['accepted_terms'] = False
+            st.warning("You declined the terms. Analysis will require acceptance.")
+
+def show_patient_info():
+    st.header("Patient Information")
+    with st.form(key='patient_form'):
+        name = st.text_input("Full name", value=st.session_state['patient_info'].get('name',''))
+        age = st.number_input("Age", min_value=0, max_value=150, value=int(st.session_state['patient_info'].get('age') or 0))
+        gender = st.selectbox("Gender", ['Not specified','Female','Male','Other'], index=['Not specified','Female','Male','Other'].index(st.session_state['patient_info'].get('gender','Not specified')))
+        submitted = st.form_submit_button("Save patient info")
+        if submitted:
+            st.session_state['patient_info'] = {'name':name, 'age':age, 'gender':gender}
+            st.success("Patient info saved.")
+    st.markdown("---")
+    cols = st.columns(3)
+    if cols[1].button("Proceed to ECG Upload & Analysis"):
+        if not st.session_state['accepted_terms']:
+            st.error("Please accept Terms & Conditions first.")
+        else:
+            go_to("ECG Upload & Analysis")
+
+def show_ecg_analysis():
+    st.header("ECG Upload & Analysis")
+    if not st.session_state['accepted_terms']:
+        st.error("You must accept the Terms & Conditions before performing analysis.")
+        return
+
 def save_uploaded_files(uploaded_files, dest_dir=WORK_DIR):
     saved = []
     for file in uploaded_files:
