@@ -419,7 +419,7 @@ if run_button:
         sequence_df["rule_tachy_result"] = tachy_results + [None]*(len(sequence_df)-len(tachy_results))
 
     st.download_button(label="Download beat-level features (CSV)", data=beat_df.to_csv(index=False).encode('utf-8'), file_name=f"beats_{chosen_base}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
-    st.download_button(label="Download sequence-level summary (CSV)", data=sequence_df.to_csv
+    st.download_button(label="Download sequence-level summary (CSV)", data=sequence_df.to_csv)
 
 # ------------------------ Session state defaults ------------------------
 if 'page' not in st.session_state:
