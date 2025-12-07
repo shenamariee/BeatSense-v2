@@ -250,7 +250,7 @@ def show_working_principle():
         5. Sequences of beats are summarized (RR statistics, RMSSD, pNN50, etc.) and rule-based logic classifies rhythm windows.
         6. If enough labeled tachy sequences exist, a second RF model is trained to subtype tachyarrhythmias.
 
-        The app is intended for academic/demonstration purposes and NOT a substitute for clinical diagnosis.
+        The app is intended for academic and demonstration purposes and NOT a substitute for clinical diagnosis.
         """
     )
     st.markdown("---")
