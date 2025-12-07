@@ -136,7 +136,7 @@ def show_ecg_analysis():
         key="record_selector"
     )
 
-   if run_button:
+ if run_button:
     st.info("Running analysis...")
     record_path = os.path.join(WORK_DIR, chosen_base)
     try:
