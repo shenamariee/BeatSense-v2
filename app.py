@@ -647,21 +647,34 @@ def show_ecg_analysis():
         st.download_button(label="Download sequence-level summary (CSV)", data=sequence_df.to_csv(index=False).encode('utf-8'), file_name=f"sequences_{chosen_base}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
         st.success("Analysis complete.")
 
+             # ✅ SAVE EVERYTHING FOR RESULTS PAGE
+        st.session_state.last_result = {
+            "summary": "normal",   # you may later replace this with real logic
+            "chosen_base": chosen_base,
+            "beat_df": beat_df if 'beat_df' in locals() else None,
+            "sequence_df": sequence_df if 'sequence_df' in locals() else None
+        }
+
+    
     # offer proceed once analysis output exists
     if st.session_state.get('last_analysis') is not None:
         if st.button("Proceed to Results"):
             go_to("Results")
 
-# --- CLEAN RESULTS PAGE (REPLACE YOUR OLD RESULTS SECTION) ---
-
 def show_results():
     st.header("Result Summary")
 
-    if 'last_summary' not in st.session_state:
+    # ✅ CORRECT SESSION KEY
+    if 'last_result' not in st.session_state:
         st.info("No analysis run yet — go to ECG Upload & Analysis and run the analysis.")
         return
 
-    summary = st.session_state['last_summary']
+    res = st.session_state['last_result']
+    summary = res.get("summary", "unknown")
+
+    # ================================
+    # === TEXT SUMMARY INTERPRETATION
+    # ================================
 
     if summary.lower() == "normal":
         st.success(
@@ -688,13 +701,25 @@ def show_results():
             "We recommend consulting a professional healthcare provider for proper assessment."
         )
 
-    # download existing CSVs if present
-    if 'beat_df' in res and res['beat_df'] is not None:
-        st.download_button(label="Download beat-level CSV", data=res['beat_df'].to_csv(index=False).encode('utf-8'),
-                           file_name=f"beats_{res['chosen_base']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
-    if 'sequence_df' in res and res['sequence_df'] is not None:
-        st.download_button(label="Download sequence-level CSV", data=res['sequence_df'].to_csv(index=False).encode('utf-8'),
-                           file_name=f"sequences_{res['chosen_base']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mime="text/csv")
+    # ================================
+    # === CSV DOWNLOADS
+    # ================================
+
+    if res.get("beat_df") is not None:
+        st.download_button(
+            label="Download beat-level CSV",
+            data=res["beat_df"].to_csv(index=False).encode("utf-8"),
+            file_name=f"beats_{res['chosen_base']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv"
+        )
+
+    if res.get("sequence_df") is not None:
+        st.download_button(
+            label="Download sequence-level CSV",
+            data=res["sequence_df"].to_csv(index=False).encode("utf-8"),
+            file_name=f"sequences_{res['chosen_base']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv"
+        )
 
     st.markdown("---")
     cols = st.columns(3)
