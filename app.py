@@ -570,43 +570,39 @@ def show_ecg_analysis():
         if st.button("Proceed to Results"):
             go_to("Results")
 
-def show_results():
-    st.header("Results Summary")
-    if not st.session_state['last_analysis']:
-        st.info("No analysis run yet — go to ECG Upload & Analysis and run the analysis.")
-        return
-    res = st.session_state['last_analysis']
-    overall_summary = res['overall_summary']
+# --- CLEAN RESULTS PAGE (REPLACE YOUR OLD RESULTS SECTION) ---
 
-    # Clean result statement
-    total = sum(overall_summary.values())
-    if total == 0:
-        st.info("No sequence windows found in analysis.")
-    else:
-        normal_pct = (overall_summary.get('Normal',0)/total)*100 if total>0 else 0
-        if overall_summary.get('Tachycardia',0) == 0 and overall_summary.get('Bradycardia',0) == 0:
-            st.success("Result: Normal rhythm detected. Based on the uploaded recording, the heart rhythm appears healthy. This is for academic/demonstration purposes only.")
-        else:
-            if overall_summary.get('Bradycardia',0) > 0:
-                st.warning("Result: Some windows show bradycardia (slow heart rate). If symptomatic, seek professional medical advice.")
-            if overall_summary.get('Tachycardia',0) > 0:
-                st.warning("Result: Some windows show tachycardia (fast heart rate). If symptomatic or persistent, please consult a healthcare professional.")
+st.header("Your Results Are Here:")
 
-    st.subheader("Detailed summary")
-    st.dataframe(pd.DataFrame([{"Rhythm Type": k, "Sequences": v} for k,v in overall_summary.items() if v>0]))
+# Show the overall summary generated in your analysis section
+st.write(f"**ECG Summary:** {overall_summary}")
 
-    # quick chart
-    fig, ax = plt.subplots(figsize=(8,3))
-    labels = [k for k,v in overall_summary.items() if v>0]
-    vals = [v for k,v in overall_summary.items() if v>0]
-    if len(labels) > 0:
-        ax.bar(labels, vals)
-        ax.set_title("Sequence-level rhythm distribution")
-        st.pyplot(fig)
+# Conditional explanation messages
+if overall_summary.lower() == "normal":
+    st.success(
+        "Your heart rhythm appears **normal**. "
+        "Your ECG does not show abnormalities typically associated with conduction problems. "
+        "Maintain a healthy lifestyle and continue monitoring routinely!"
+    )
 
-    st.markdown("---")
-    st.write("Patient info:")
-    st.write(st.session_state['patient_info'])
+elif overall_summary.lower() in ["bradycardic", "bradycardia"]:
+    st.warning(
+        "Your ECG indicates **bradycardia**, which means your heart rate is slower than expected. "
+        "If you experience dizziness, fatigue, or fainting, please consult a medical professional."
+    )
+
+elif overall_summary.lower() in ["tachycardic", "tachycardia"]:
+    st.warning(
+        "Your ECG indicates **tachycardia**, meaning your heart is beating faster than normal. "
+        "It is recommended to consult a medical professional for further evaluation."
+    )
+
+else:
+    st.info(
+        "Your ECG shows **significant abnormalities or mixed patterns**. "
+        "We recommend consulting a professional healthcare provider for proper assessment."
+    )
+
 
     # download existing CSVs if present
     if 'beat_df' in res and res['beat_df'] is not None:
