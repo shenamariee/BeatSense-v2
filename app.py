@@ -250,7 +250,7 @@ def show_working_principle():
         5. Sequences of beats are summarized (RR statistics, RMSSD, pNN50, etc.) and rule-based logic classifies rhythm windows.
         6. If enough labeled tachy sequences exist, a second RF model is trained to subtype tachyarrhythmias.
 
-        The app is intended for academic/demonstration purposes and NOT a substitute for clinical diagnosis.
+        The app is intended for academic and demonstration purposes and NOT a substitute for clinical diagnosis.
         """
     )
     st.markdown("---")
@@ -570,43 +570,41 @@ def show_ecg_analysis():
         if st.button("Proceed to Results"):
             go_to("Results")
 
+# --- CLEAN RESULTS PAGE (REPLACE YOUR OLD RESULTS SECTION) ---
+
 def show_results():
-    st.header("Results Summary")
-    if not st.session_state['last_analysis']:
+    st.header("Result Summary")
+
+    if 'last_summary' not in st.session_state:
         st.info("No analysis run yet — go to ECG Upload & Analysis and run the analysis.")
         return
-    res = st.session_state['last_analysis']
-    overall_summary = res['overall_summary']
 
-    # Clean result statement
-    total = sum(overall_summary.values())
-    if total == 0:
-        st.info("No sequence windows found in analysis.")
+    summary = st.session_state['last_summary']
+
+    if summary.lower() == "normal":
+        st.success(
+            "Your heart rhythm appears **normal**. "
+            "Your ECG does not show abnormalities typically associated with conduction problems. "
+            "Maintain a healthy lifestyle and continue monitoring routinely!"
+        )
+
+    elif summary.lower() in ["bradycardic", "bradycardia"]:
+        st.warning(
+            "Your ECG indicates **bradycardia**, which means your heart rate is slower than expected. "
+            "If you experience dizziness, fatigue, or fainting, please consult a medical professional."
+        )
+
+    elif summary.lower() in ["tachycardic", "tachycardia"]:
+        st.warning(
+            "Your ECG indicates **tachycardia**, meaning your heart is beating faster than normal. "
+            "It is recommended to consult a medical professional for further evaluation."
+        )
+
     else:
-        normal_pct = (overall_summary.get('Normal',0)/total)*100 if total>0 else 0
-        if overall_summary.get('Tachycardia',0) == 0 and overall_summary.get('Bradycardia',0) == 0:
-            st.success("Result: Normal rhythm detected. Based on the uploaded recording, the heart rhythm appears healthy. This is for academic/demonstration purposes only.")
-        else:
-            if overall_summary.get('Bradycardia',0) > 0:
-                st.warning("Result: Some windows show bradycardia (slow heart rate). If symptomatic, seek professional medical advice.")
-            if overall_summary.get('Tachycardia',0) > 0:
-                st.warning("Result: Some windows show tachycardia (fast heart rate). If symptomatic or persistent, please consult a healthcare professional.")
-
-    st.subheader("Detailed summary")
-    st.dataframe(pd.DataFrame([{"Rhythm Type": k, "Sequences": v} for k,v in overall_summary.items() if v>0]))
-
-    # quick chart
-    fig, ax = plt.subplots(figsize=(8,3))
-    labels = [k for k,v in overall_summary.items() if v>0]
-    vals = [v for k,v in overall_summary.items() if v>0]
-    if len(labels) > 0:
-        ax.bar(labels, vals)
-        ax.set_title("Sequence-level rhythm distribution")
-        st.pyplot(fig)
-
-    st.markdown("---")
-    st.write("Patient info:")
-    st.write(st.session_state['patient_info'])
+        st.info(
+            "Your ECG shows **significant abnormalities or mixed patterns**. "
+            "We recommend consulting a professional healthcare provider for proper assessment."
+        )
 
     # download existing CSVs if present
     if 'beat_df' in res and res['beat_df'] is not None:
