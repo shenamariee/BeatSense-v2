@@ -577,7 +577,7 @@ st.header("Result Summary")
 st.write("Your Result Are Here:")
 
 # Show the overall summary generated in your analysis section
-    if not st.session_state['last_analysis']: 
+if not st.session_state['last_analysis']: 
     st.info("No analysis run yet — go to ECG Upload & Analysis and run the analysis.") 
     return res = st.session_state['last_analysis'] 
     overall_summary = res['overall_summary']
