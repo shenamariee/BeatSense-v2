@@ -595,18 +595,35 @@ def show_results():
     st.subheader("Detailed summary")
     st.dataframe(pd.DataFrame([{"Rhythm Type": k, "Sequences": v} for k,v in overall_summary.items() if v>0]))
 
-    # quick chart
-    fig, ax = plt.subplots(figsize=(8,3))
-    labels = [k for k,v in overall_summary.items() if v>0]
-    vals = [v for k,v in overall_summary.items() if v>0]
-    if len(labels) > 0:
-        ax.bar(labels, vals)
-        ax.set_title("Sequence-level rhythm distribution")
-        st.pyplot(fig)
+    elif page == "Results":
+    st.title("Your Results Are Here")
 
-    st.markdown("---")
-    st.write("Patient info:")
-    st.write(st.session_state['patient_info'])
+    if st.session_state.get("analysis_summary") is None:
+        st.warning("No results found. Please go to the Analysis page first.")
+    else:
+        summary = st.session_state.analysis_summary
+
+        st.markdown("### Your results are here:")
+        st.write(f"It shows that your ECG recording is **{summary}**.")
+
+        # --- Custom message based on result ---
+        if "normal" in summary.lower():
+            st.success(
+                "Your heart rhythm appears **normal**. Continue maintaining a healthy lifestyle and regular check-ups to keep your heart in good condition."
+            )
+
+        elif "brady" in summary.lower() or "tachy" in summary.lower():
+            st.error(
+                "Your heart rhythm shows **significant abnormalities** such as bradycardia or tachycardia. "
+                "It is recommended to consult a medical professional for proper evaluation and guidance."
+            )
+
+        else:
+            st.info(
+                "Your ECG shows findings that may need further review. "
+                "Please consult a healthcare provider for a more detailed assessment."
+            )
+
 
     # download existing CSVs if present
     if 'beat_df' in res and res['beat_df'] is not None:
