@@ -575,7 +575,7 @@ def show_ecg_analysis():
 st.header("Your Results Are Here:")
 
 # Show the overall summary generated in your analysis section
-st.write(f"**ECG Summary:** {Overall rhythm summary (sequence-level windows)}")
+st.write(f"**ECG Summary:** {last_analysis}")
 
 # Conditional explanation messages
 if overall_summary.lower() == "normal":
