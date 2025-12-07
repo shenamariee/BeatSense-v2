@@ -727,13 +727,24 @@ def show_results():
         go_to("Thank You")
 
 def show_thankyou():
-    st.header("Thank you for using BeatSense")
-    st.write("We appreciate you trying this academic demonstration. If you found this useful, please star the repo on GitHub and cite appropriately.")
-    st.write("Remember: BeatSense is an academic tool — not for clinical use.")
-    if st.button("Restart (clear session)"):
-        for k in list(st.session_state.keys()):
-            del st.session_state[k]
-        st.experimental_rerun()
+    st.header("Thank You for Using BeatSense 💙")
+
+    st.success("Your ECG analysis session is complete.")
+
+    st.markdown("### What would you like to do next?")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🔁 Go Back to Main Menu"):
+            st.session_state.page = "Home"
+            st.rerun()   # ✅ SAFE RERUN
+
+    with col2:
+        if st.button("❌ Exit Application"):
+            st.warning("You may now safely close this browser tab.")
+            st.stop()   # ✅ CLEAN SHUTDOWN
+
 
 # ------------------------ Page router ------------------------
 page_funcs = {
