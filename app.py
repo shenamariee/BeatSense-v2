@@ -711,9 +711,7 @@ def show_results():
     res = st.session_state['last_result']
     summary = res.get("summary", "unknown")
 
-    # ================================
     # === TEXT SUMMARY INTERPRETATION
-    # ================================
 
     if summary.lower() == "normal":
         st.success(
@@ -740,9 +738,7 @@ def show_results():
             "We recommend consulting a professional healthcare provider for proper assessment."
         )
 
-    # ================================
     # === CSV DOWNLOADS
-    # ================================
 
     if res.get("beat_df") is not None:
         st.download_button(
