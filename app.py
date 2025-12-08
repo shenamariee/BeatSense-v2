@@ -63,7 +63,7 @@ LOGO_FILENAME = "BeatSense Logo.jpg"  # exact filename in your repo
 WORK_DIR = "ecg_data"
 os.makedirs(WORK_DIR, exist_ok=True)
 
-# ------------------------ Utility functions (from your original) ------------------------
+# ------------------------ Utility functions ------------------------
 def show_home():
     st.header("BeatSense")
     col1, col2 = st.columns([1,3])
