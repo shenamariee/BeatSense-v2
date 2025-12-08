@@ -595,6 +595,11 @@ def show_ecg_analysis():
             'sequence_df': pd.DataFrame(seq_features, columns=["mean_rr","median_rr","std_rr","rmssd","pnn50","avg_hr","pause_flag","irregular_flag","percent_V","percent_A","percent_F","percent_LR","percent_N"])
         }
 
+        st.subheader("Overall rhythm summary (sequence-level windows)")
+        total_sequences = sum(overall_summary.values()) if sum(overall_summary.values())>0 else 1
+        summary_table = pd.DataFrame([{"Rhythm Type": k, "Sequences": v, "Percent": (v/total_sequences)*100 if total_sequences>0 else 0.0} for k,v in overall_summary.items() if v>0])
+        st.dataframe(summary_table)
+
        # --- ECG plot showing the first 20 R-peaks only ---
 
         # Take first 20 R-peaks (or fewer if the signal has <20)
