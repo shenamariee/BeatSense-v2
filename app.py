@@ -794,5 +794,3 @@ page_funcs = {
 
 page_func = page_funcs.get(st.session_state['page'], show_home)
 page_func()
-
-IS THERE ANY REPEATED CODES THAT MUST BE OMIT?
