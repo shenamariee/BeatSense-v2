@@ -595,21 +595,20 @@ def show_ecg_analysis():
             'sequence_df': pd.DataFrame(seq_features, columns=["mean_rr","median_rr","std_rr","rmssd","pnn50","avg_hr","pause_flag","irregular_flag","percent_V","percent_A","percent_F","percent_LR","percent_N"])
         }
 
-        # Display summary & plots
-        st.subheader("Overall rhythm summary (sequence-level windows)")
-        total_sequences = sum(overall_summary.values()) if sum(overall_summary.values())>0 else 1
-        summary_table = pd.DataFrame([{"Rhythm Type": k, "Sequences": v, "Percent": (v/total_sequences)*100 if total_sequences>0 else 0.0} for k,v in overall_summary.items() if v>0])
-        st.dataframe(summary_table)
+                   N = 20  # number of samples to plot
+            
+            subset_signal = signal[:N]
+            subset_r_peaks = [p for p in r_peaks if p < N]
+            
+            fig, ax = plt.subplots(figsize=(12,3))
+            ax.plot(subset_signal, label="ECG Signal (first 20)")
+            ax.scatter(subset_r_peaks, subset_signal[subset_r_peaks], color="red", s=10, label="R-peaks")
+            ax.set_title("ECG Signal (first 20 samples)")
+            ax.set_xlabel("Sample")
+            ax.set_ylabel("Amplitude")
+            ax.legend()
+            st.pyplot(fig)
 
-        fig, ax = plt.subplots(figsize=(12,3))
-        ax.plot(signal, label='ECG Signal')
-        ax.scatter(r_peaks, signal[r_peaks], color='red', s=10, label='R-peaks')
-        ax.set_title(f"ECG Signal (first {len(signal)} samples)")
-        ax.set_xlabel("Sample")
-        ax.set_ylabel("Amplitude")
-        ax.legend()
-        st.subheader("ECG plot with detected/annotated R-peaks")
-        st.pyplot(fig)
 
         st.subheader("First 20 beats (ML beat label if available, HR, Sequence-level rhythm)")
         beat_rows = []
