@@ -595,19 +595,22 @@ def show_ecg_analysis():
             'sequence_df': pd.DataFrame(seq_features, columns=["mean_rr","median_rr","std_rr","rmssd","pnn50","avg_hr","pause_flag","irregular_flag","percent_V","percent_A","percent_F","percent_LR","percent_N"])
         }
 
-                   N = 20  # number of samples to plot
-            
+            # --- ECG plot with limited samples ---
+            N = 20  # number of samples to plot
             subset_signal = signal[:N]
             subset_r_peaks = [p for p in r_peaks if p < N]
             
             fig, ax = plt.subplots(figsize=(12,3))
-            ax.plot(subset_signal, label="ECG Signal (first 20)")
+            ax.plot(subset_signal, label="ECG Signal (first 20 samples)")
             ax.scatter(subset_r_peaks, subset_signal[subset_r_peaks], color="red", s=10, label="R-peaks")
             ax.set_title("ECG Signal (first 20 samples)")
             ax.set_xlabel("Sample")
             ax.set_ylabel("Amplitude")
             ax.legend()
+            
+            st.subheader("ECG plot with detected/annotated R-peaks (first 20 samples)")
             st.pyplot(fig)
+
 
 
         st.subheader("First 20 beats (ML beat label if available, HR, Sequence-level rhythm)")
